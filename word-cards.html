@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>初中英文单词卡片背诵</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        warm: '#FEF3C7',
+                        soft: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .card-flip {
+                perspective: 1000px;
+                transform-style: preserve-3d;
+            }
+            .card-inner {
+                transition: transform 0.6s;
+                transform-style: preserve-3d;
+            }
+            .card-flipped .card-inner {
+                transform: rotateY(180deg);
+            }
+            .card-front, .card-back {
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+            }
+            .card-back {
+                transform: rotateY(180deg);
+            }
+            .progress-ring {
+                transform: rotate(-90deg);
+            }
+            .progress-ring-circle {
+                transition: stroke-dasharray 0.35s;
+                transform-origin: 50% 50%;
+            }
+            .bounce-in {
+                animation: bounceIn 0.6s ease-out;
+            }
+            @keyframes bounceIn {
+                0% { transform: scale(0.3); opacity: 0; }
+                50% { transform: scale(1.05); opacity: 1; }
+                70% { transform: scale(0.9); }
+                100% { transform: scale(1); }
+            }
+            .slide-up {
+                animation: slideUp 0.4s ease-out;
+            }
+            @keyframes slideUp {
+                0% { transform: translateY(20px); opacity: 0; }
+                100% { transform: translateY(0); opacity: 1; }
+            }
+            .pulse-ring {
+                animation: pulseRing 1.5s infinite;
+            }
+            @keyframes pulseRing {
+                0% { transform: scale(0.33); }
+                80%, 100% { opacity: 0; }
+            }
+            .pulse-dot {
+                animation: pulseDot 1.5s infinite;
+            }
+            @keyframes pulseDot {
+                0% { transform: scale(0.8); }
+                50% { transform: scale(1); }
+                100% { transform: scale(0.8); }
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-soft via-white to-warm min-h-screen">
+    <!-- 顶部导航 -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
+                        <i class="fa fa-book text-white text-lg"></i>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-800">初中英文单词卡片</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-600">
+                        <span id="current-word">单词 1</span> / <span id="total-words">100</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 relative">
+                            <svg class="progress-ring w-8 h-8">
+                                <circle class="progress-ring-circle stroke-current text-gray-200" stroke-width="2" fill="transparent" r="14" cx="16" cy="16"/>
+                                <circle id="progress-circle" class="progress-ring-circle stroke-current text-primary" stroke-width="2" fill="transparent" r="14" cx="16" cy="16" stroke-dasharray="88" stroke-dashoffset="88"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span id="progress-text" class="text-xs font-medium text-gray-700">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 学习模式选择 -->
+        <div class="mb-8 text-center">
+            <div class="inline-flex bg-white/70 backdrop-blur-sm rounded-full p-1 shadow-sm">
+                <button id="mode-all" class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 bg-primary text-white">
+                    全部单词
+                </button>
+                <button id="mode-audio" class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 text-gray-600 hover:bg-gray-100">
+                    听力模式
+                </button>
+                <button id="mode-review" class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 text-gray-600 hover:bg-gray-100">
+                    复习模式
+                </button>
+            </div>
+        </div>
+
+        <!-- 单词卡片 -->
+        <div class="flex justify-center mb-8">
+            <div id="word-card" class="card-flip w-full max-w-md cursor-pointer">
+                <div class="card-inner relative">
+                    <!-- 卡片正面 -->
+                    <div class="card-front bg-white rounded-3xl shadow-xl p-8 min-h-96 flex flex-col items-center justify-center text-center">
+                        <div class="mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-r from-accent to-orange-400 rounded-2xl flex items-center justify-center mb-4">
+                                <i class="fa fa-language text-white text-2xl"></i>
+                            </div>
+                            <h2 id="word-english" class="text-4xl font-bold text-gray-800 mb-2">Apple</h2>
+                            <p id="word-type" class="text-lg text-primary font-medium">n. 名词</p>
+                        </div>
+                        <div class="mt-8">
+                            <button id="play-audio" class="flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl transition-all duration-300">
+                                <i class="fa fa-volume-up"></i>
+                                <span>听发音</span>
+                            </button>
+                        </div>
+                        <div class="absolute bottom-6 text-sm text-gray-500">
+                            点击卡片查看释义
+                        </div>
+                    </div>
+
+                    <!-- 卡片背面 -->
+                    <div class="card-back absolute top-0 left-0 w-full bg-gradient-to-br from-secondary/10 to-green-100 rounded-3xl shadow-xl p-8 min-h-96 flex flex-col">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 id="back-english" class="text-3xl font-bold text-gray-800 mb-2">Apple</h2>
+                                <p id="back-type" class="text-lg text-secondary font-medium">n. 名词</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="know-word" class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full transition-all duration-300 flex items-center justify-center">
+                                    <i class="fa fa-check"></i>
+                                </button>
+                                <button id="unknown-word" class="w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-300 flex items-center justify-center">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-2">中文释义</h3>
+                            <p id="word-chinese" class="text-xl text-gray-800">苹果</p>
+                        </div>
+
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-3">例句</h3>
+                            <div id="word-sentence" class="bg-white/70 rounded-xl p-4 text-gray-700 leading-relaxed">
+                                I eat an apple every day. <br>
+                                <span class="text-gray-500 text-sm mt-2 block">我每天吃一个苹果。</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex justify-between">
+                            <button id="prev-word" class="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all duration-300">
+                                <i class="fa fa-arrow-left"></i>
+                                <span>上一个</span>
+                            </button>
+                            <button id="next-word" class="flex items-center space-x-2 bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-300">
+                                <span>下一个</span>
+                                <i class="fa fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习统计 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 text-center shadow-sm">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-check-circle text-primary text-xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-1" id="known-count">0</h3>
+                <p class="text-gray-600">已掌握</p>
+            </div>
+            <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 text-center shadow-sm">
+                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-clock-o text-accent text-xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-1" id="unknown-count">0</h3>
+                <p class="text-gray-600">需复习</p>
+            </div>
+            <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 text-center shadow-sm">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-trophy text-secondary text-xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-1" id="accuracy-rate">0%</h3>
+                <p class="text-gray-600">准确率</p>
+            </div>
+        </div>
+
+        <!-- 功能按钮 -->
+        <div class="flex flex-wrap justify-center gap-4">
+            <button id="shuffle-words" class="flex items-center space-x-2 bg-purple-100 hover:bg-purple-200 text-purple-700 px-6 py-3 rounded-xl transition-all duration-300">
+                <i class="fa fa-random"></i>
+                <span>随机打乱</span>
+            </button>
+            <button id="reset-progress" class="flex items-center space-x-2 bg-red-100 hover:bg-red-200 text-red-700 px-6 py-3 rounded-xl transition-all duration-300">
+                <i class="fa fa-bullseye"></i>
+                <span>重置进度</span>
+            </button>
+            <button id="show-review" class="flex items-center space-x-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-6 py-3 rounded-xl transition-all duration-300">
+                <i class="fa fa-list"></i>
+                <span>复习列表</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- 复习列表模态框 -->
+    <div id="review-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h3 class="text-2xl font-bold text-gray-800">复习单词列表</h3>
+                <button id="close-modal" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center">
+                    <i class="fa fa-times text-gray-600"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
+                <div id="review-list" class="space-y-3">
+                    <!-- 复习单词列表将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 完成提示 -->
+    <div id="completion-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div class="w-20 h-20 bg-gradient-to-r from-secondary to-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fa fa-trophy text-white text-3xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">恭喜完成！</h3>
+            <p class="text-gray-600 mb-6">你已经完成了所有单词的学习</p>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">总单词数：</span>
+                    <span id="final-total" class="font-semibold">100</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">已掌握：</span>
+                    <span id="final-known" class="font-semibold text-green-600">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">准确率：</span>
+                    <span id="final-accuracy" class="font-semibold text-blue-600">0%</span>
+                </div>
+            </div>
+            <div class="mt-8 space-y-3">
+                <button id="restart-learning" class="w-full bg-primary hover:bg-blue-600 text-white py-3 rounded-xl transition-all duration-300 font-medium">
+                    重新开始
+                </button>
+                <button id="review-unknown" class="w-full bg-accent hover:bg-orange-500 text-white py-3 rounded-xl transition-all duration-300 font-medium">
+                    复习未掌握
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 单词数据 - 从PDF中提取的基础单词
+        const wordList = [
+            { english: "Apple", type: "n.", chinese: "苹果", sentence: "I eat an apple every day.", sentenceCn: "我每天吃一个苹果。" },
+            { english: "Book", type: "n.", chinese: "书", sentence: "This is my favorite book.", sentenceCn: "这是我最喜欢的书。" },
+            { english: "Cat", type: "n.", chinese: "猫", sentence: "The cat is sleeping on the sofa.", sentenceCn: "猫在沙发上睡觉。" },
+            { english: "Dog", type: "n.", chinese: "狗", sentence: "My dog's name is Max.", sentenceCn: "我的狗叫Max。" },
+            { english: "Elephant", type: "n.", chinese: "大象", sentence: "The elephant is very big.", sentenceCn: "大象非常大。" },
+            { english: "Fish", type: "n.", chinese: "鱼", sentence: "There are many fish in the sea.", sentenceCn: "海里有很多鱼。" },
+            { english: "Girl", type: "n.", chinese: "女孩", sentence: "The girl is playing with her toys.", sentenceCn: "女孩在玩她的玩具。" },
+            { english: "House", type: "n.", chinese: "房子", sentence: "We live in a big house.", sentenceCn: "我们住在一个大房子里。" },
+            { english: "Ice cream", type: "n.", chinese: "冰淇淋", sentence: "I like chocolate ice cream.", sentenceCn: "我喜欢巧克力冰淇淋。" },
+            { english: "Juice", type: "n.", chinese: "果汁", sentence: "Can I have some orange juice?", sentenceCn: "我能喝点橙汁吗？" },
+            { english: "Kite", type: "n.", chinese: "风筝", sentence: "The children are flying kites.", sentenceCn: "孩子们在放风筝。" },
+            { english: "Lion", type: "n.", chinese: "狮子", sentence: "The lion is the king of the jungle.", sentenceCn: "狮子是丛林之王。" },
+            { english: "Mountain", type: "n.", chinese: "山", sentence: "We climbed a high mountain.", sentenceCn: "我们爬了一座高山。" },
+            { english: "Notebook", type: "n.", chinese: "笔记本", sentence: "I write notes in my notebook.", sentenceCn: "我在笔记本上写笔记。" },
+            { english: "Orange", type: "n.", chinese: "橙子", sentence: "This orange is very sweet.", sentenceCn: "这个橙子很甜。" },
+            { english: "Pencil", type: "n.", chinese: "铅笔", sentence: "Can you lend me a pencil?", sentenceCn: "你能借我一支铅笔吗？" },
+            { english: "Queen", type: "n.", chinese: "女王", sentence: "The queen lives in a palace.", sentenceCn: "女王住在宫殿里。" },
+            { english: "Rabbit", type: "n.", chinese: "兔子", sentence: "The rabbit has long ears.", sentenceCn: "兔子有长长的耳朵。" },
+            { english: "Sun", type: "n.", chinese: "太阳", sentence: "The sun is shining brightly.", sentenceCn: "太阳明亮地照耀着。" },
+            { english: "Tree", type: "n.", chinese: "树", sentence: "There are many leaves on the tree.", sentenceCn: "树上有很多叶子。" },
+            { english: "Umbrella", type: "n.", chinese: "雨伞", sentence: "I need an umbrella when it rains.", sentenceCn: "下雨时我需要一把雨伞。" },
+            { english: "Violin", type: "n.", chinese: "小提琴", sentence: "She plays the violin beautifully.", sentenceCn: "她小提琴拉得很美。" },
+            { english: "Water", type: "n.", chinese: "水", sentence: "We need water to live.", sentenceCn: "我们需要水来生存。" },
+            { english: "Xylophone", type: "n.", chinese: "木琴", sentence: "The xylophone makes nice sounds.", sentenceCn: "木琴发出美妙的声音。" },
+            { english: "Yellow", type: "adj.", chinese: "黄色的", sentence: "The sun is yellow.", sentenceCn: "太阳是黄色的。" },
+            { english: "Zebra", type: "n.", chinese: "斑马", sentence: "The zebra has black and white stripes.", sentenceCn: "斑马有黑白条纹。" },
+            { english: "School", type: "n.", chinese: "学校", sentence: "I go to school every morning.", sentenceCn: "我每天早上上学。" },
+            { english: "Teacher", type: "n.", chinese: "老师", sentence: "My teacher is very kind.", sentenceCn: "我的老师很和蔼。" },
+            { english: "Student", type: "n.", chinese: "学生", sentence: "There are 30 students in my class.", sentenceCn: "我的班级有30个学生。" },
+            { english: "Classroom", type: "n.", chinese: "教室", sentence: "Our classroom is very clean.", sentenceCn: "我们的教室很干净。" },
+            { english: "Friend", type: "n.", chinese: "朋友", sentence: "Tom is my best friend.", sentenceCn: "Tom是我最好的朋友。" },
+            { english: "Family", type: "n.", chinese: "家庭", sentence: "I love my family very much.", sentenceCn: "我非常爱我的家人。" },
+            { english: "Mother", type: "n.", chinese: "妈妈", sentence: "My mother cooks delicious food.", sentenceCn: "我妈妈做的食物很好吃。" },
+            { english: "Father", type: "n.", chinese: "爸爸", sentence: "My father helps me with my homework.", sentenceCn: "我爸爸帮我做作业。" },
+            { english: "Brother", type: "n.", chinese: "兄弟", sentence: "I have a younger brother.", sentenceCn: "我有一个弟弟。" },
+            { english: "Sister", type: "n.", chinese: "姐妹", sentence: "My sister likes to read books.", sentenceCn: "我妹妹喜欢看书。" },
+            { english: "Grandmother", type: "n.", chinese: "奶奶", sentence: "My grandmother tells me stories.", sentenceCn: "我奶奶给我讲故事。" },
+            { english: "Grandfather", type: "n.", chinese: "爷爷", sentence: "My grandfather likes to garden.", sentenceCn: "我爷爷喜欢园艺。" },
+            { english: "Computer", type: "n.", chinese: "电脑", sentence: "I use a computer for studying.", sentenceCn: "我用电脑学习。" },
+            { english: "Telephone", type: "n.", chinese: "电话", sentence: "Can I use your telephone?", sentenceCn: "我能用一下你的电话吗？" },
+            { english: "Television", type: "n.", chinese: "电视", sentence: "We watch television in the evening.", sentenceCn: "我们晚上看电视。" },
+            { english: "Radio", type: "n.", chinese: "收音机", sentence: "My grandfather listens to the radio.", sentenceCn: "我爷爷听收音机。" },
+            { english: "Clock", type: "n.", chinese: "时钟", sentence: "The clock on the wall is beautiful.", sentenceCn: "墙上的时钟很漂亮。" },
+            { english: "Watch", type: "n.", chinese: "手表", sentence: "I wear a watch to school.", sentenceCn: "我戴着手表上学。" },
+            { english: "Camera", type: "n.", chinese: "相机", sentence: "We take photos with a camera.", sentenceCn: "我们用相机拍照。" },
+            { english: "Bicycle", type: "n.", chinese: "自行车", sentence: "I ride my bicycle to school.", sentenceCn: "我骑自行车上学。" },
+            { english: "Car", type: "n.", chinese: "汽车", sentence: "My father drives a car to work.", sentenceCn: "我爸爸开车上班。" },
+            { english: "Bus", type: "n.", chinese: "公共汽车", sentence: "Many people take the bus.", sentenceCn: "很多人坐公共汽车。" },
+            { english: "Train", type: "n.", chinese: "火车", sentence: "The train is very fast.", sentenceCn: "火车很快。" },
+            { english: "Airplane", type: "n.", chinese: "飞机", sentence: "I want to fly in an airplane.", sentenceCn: "我想坐飞机。" },
+            { english: "Ship", type: "n.", chinese: "船", sentence: "The ship sails on the sea.", sentenceCn: "船在海上航行。" },
+            { english: "Boat", type: "n.", chinese: "小船", sentence: "We row a boat on the lake.", sentenceCn: "我们在湖上划船。" },
+            { english: "Ball", type: "n.", chinese: "球", sentence: "The children are playing with a ball.", sentenceCn: "孩子们在玩球。" },
+            { english: "Game", type: "n.", chinese: "游戏", sentence: "We play games after school.", sentenceCn: "我们放学后玩游戏。" },
+            { english: "Toy", type: "n.", chinese: "玩具", sentence: "The toy store has many toys.", sentenceCn: "玩具店有很多玩具。" },
+            { english: "Doll", type: "n.", chinese: "洋娃娃", sentence: "My sister likes to play with dolls.", sentenceCn: "我妹妹喜欢玩洋娃娃。" },
+            { english: "Balloon", type: "n.", chinese: "气球", sentence: "The balloon is floating in the sky.", sentenceCn: "气球在天空中漂浮。" },
+            { english: "Cake", type: "n.", chinese: "蛋糕", sentence: "We eat cake on birthdays.", sentenceCn: "我们生日时吃蛋糕。" },
+            { english: "Candy", type: "n.", chinese: "糖果", sentence: "Children like to eat candy.", sentenceCn: "孩子们喜欢吃糖果。" },
+            { english: "Chocolate", type: "n.", chinese: "巧克力", sentence: "I like dark chocolate.", sentenceCn: "我喜欢黑巧克力。" },
+            { english: "Cookie", type: "n.", chinese: "饼干", sentence: "My mother bakes delicious cookies.", sentenceCn: "我妈妈烤的饼干很好吃。" },
+            { english: "Bread", type: "n.", chinese: "面包", sentence: "We eat bread for breakfast.", sentenceCn: "我们早餐吃面包。" },
+            { english: "Milk", type: "n.", chinese: "牛奶", sentence: "Drinking milk is good for you.", sentenceCn: "喝牛奶对你有好处。" },
+            { english: "Egg", type: "n.", chinese: "鸡蛋", sentence: "I eat an egg every morning.", sentenceCn: "我每天早上吃一个鸡蛋。" },
+            { english: "Rice", type: "n.", chinese: "米饭", sentence: "We eat rice for dinner.", sentenceCn: "我们晚餐吃米饭。" },
+            { english: "Noodle", type: "n.", chinese: "面条", sentence: "I like to eat noodles.", sentenceCn: "我喜欢吃面条。" },
+            { english: "Soup", type: "n.", chinese: "汤", sentence: "The soup is very hot.", sentenceCn: "汤很烫。" },
+            { english: "Meat", type: "n.", chinese: "肉", sentence: "My father likes to eat meat.", sentenceCn: "我爸爸喜欢吃肉。" },
+            { english: "Fish", type: "n.", chinese: "鱼", sentence: "Fish is good for your brain.", sentenceCn: "鱼对你的大脑有好处。" },
+            { english: "Vegetable", type: "n.", chinese: "蔬菜", sentence: "Eating vegetables is healthy.", sentenceCn: "吃蔬菜很健康。" },
+            { english: "Fruit", type: "n.", chinese: "水果", sentence: "There are many kinds of fruit.", sentenceCn: "有很多种水果。" },
+            { english: "Flower", type: "n.", chinese: "花", sentence: "The flower is very beautiful.", sentenceCn: "花很漂亮。" },
+            { english: "Garden", type: "n.", chinese: "花园", sentence: "There are many flowers in the garden.", sentenceCn: "花园里有很多花。" },
+            { english: "Park", type: "n.", chinese: "公园", sentence: "We go to the park on Sundays.", sentenceCn: "我们周日去公园。" },
+            { english: "Zoo", type: "n.", chinese: "动物园", sentence: "Children love to go to the zoo.", sentenceCn: "孩子们喜欢去动物园。" },
+            { english: "Library", type: "n.", chinese: "图书馆", sentence: "We can read books in the library.", sentenceCn: "我们可以在图书馆看书。" },
+            { english: "Hospital", type: "n.", chinese: "医院", sentence: "Doctors work in a hospital.", sentenceCn: "医生在医院工作。" },
+            { english: "Store", type: "n.", chinese: "商店", sentence: "We buy food at the store.", sentenceCn: "我们在商店买食物。" },
+            { english: "Restaurant", type: "n.", chinese: "餐厅", sentence: "We eat dinner at a restaurant.", sentenceCn: "我们在餐厅吃晚餐。" },
+            { english: "Cinema", type: "n.", chinese: "电影院", sentence: "We watch movies at the cinema.", sentenceCn: "我们在电影院看电影。" },
+            { english: "Theater", type: "n.", chinese: "剧院", sentence: "We watch plays at the theater.", sentenceCn: "我们在剧院看戏。" },
+            { english: "Church", type: "n.", chinese: "教堂", sentence: "People go to church on Sundays.", sentenceCn: "人们周日去教堂。" },
+            { english: "Mosque", type: "n.", chinese: "清真寺", sentence: "Muslims pray in a mosque.", sentenceCn: "穆斯林在清真寺祈祷。" },
+            { english: "Temple", type: "n.", chinese: "寺庙", sentence: "Buddhists worship in a temple.", sentenceCn: "佛教徒在寺庙里 worship。" },
+            { english: "Palace", type: "n.", chinese: "宫殿", sentence: "The king lives in a palace.", sentenceCn: "国王住在宫殿里。" },
+            { english: "Castle", type: "n.", chinese: "城堡", sentence: "The castle is very old.", sentenceCn: "城堡很古老。" },
+            { english: "Bridge", type: "n.", chinese: "桥", sentence: "We cross the river by bridge.", sentenceCn: "我们通过桥过河。" },
+            { english: "Road", type: "n.", chinese: "道路", sentence: "Cars drive on the road.", sentenceCn: "汽车在路上行驶。" },
+            { english: "Street", type: "n.", chinese: "街道", sentence: "There are many shops on the street.", sentenceCn: "街上有很多商店。" },
+            { english: "Path", type: "n.", chinese: "小路", sentence: "We walk along the path in the park.", sentenceCn: "我们沿着公园的小路散步。" },
+            { english: "River", type: "n.", chinese: "河流", sentence: "The river flows to the sea.", sentenceCn: "河流向大海。" },
+            { english: "Lake", type: "n.", chinese: "湖", sentence: "We swim in the lake in summer.", sentenceCn: "夏天我们在湖里游泳。" },
+            { english: "Sea", type: "n.", chinese: "海", sentence: "The sea is very big.", sentenceCn: "海很大。" },
+            { english: "Ocean", type: "n.", chinese: "海洋", sentence: "The Pacific Ocean is the largest ocean.", sentenceCn: "太平洋是最大的海洋。" },
+            { english: "Mountain", type: "n.", chinese: "山", sentence: "The mountain is covered with snow.", sentenceCn: "山上覆盖着雪。" },
+            { english: "Hill", type: "n.", chinese: "小山", sentence: "We climb the hill to see the view.", sentenceCn: "我们爬小山看风景。" },
+            { english: "Valley", type: "n.", chinese: "山谷", sentence: "The valley is very beautiful.", sentenceCn: "山谷很漂亮。" },
+            { english: "Desert", type: "n.", chinese: "沙漠", sentence: "It is very hot in the desert.", sentenceCn: "沙漠里很热。" },
+            { english: "Forest", type: "n.", chinese: "森林", sentence: "Many animals live in the forest.", sentenceCn: "很多动物住在森林里。" },
+            { english: "Jungle", type: "n.", chinese: "丛林", sentence: "The jungle is very dense.", sentenceCn: "丛林很茂密。" },
+            { english: "Island", type: "n.", chinese: "岛屿", sentence: "Taiwan is a beautiful island.", sentenceCn: "台湾是一个美丽的岛屿。" },
+            { english: "Beach", type: "n.", chinese: "海滩", sentence: "We play on the beach in summer.", sentenceCn: "夏天我们在海滩上玩。" },
+            { english: "Sand", type: "n.", chinese: "沙子", sentence: "The sand on the beach is warm.", sentenceCn: "海滩上的沙子很暖和。" },
+            { english: "Wave", type: "n.", chinese: "波浪", sentence: "The waves are crashing on the shore.", sentenceCn: "波浪拍打着海岸。" },
+            { english: "Sky", type: "n.", chinese: "天空", sentence: "The sky is blue.", sentenceCn: "天空是蓝色的。" },
+            { english: "Cloud", type: "n.", chinese: "云", sentence: "The clouds are white.", sentenceCn: "云是白色的。" },
+            { english: "Rain", type: "n.", chinese: "雨", sentence: "We need rain for the plants.", sentenceCn: "植物需要雨水。" },
+            { english: "Snow", type: "n.", chinese: "雪", sentence: "We make snowmen in winter.", sentenceCn: "冬天我们堆雪人。" },
+            { english: "Wind", type: "n.", chinese: "风", sentence: "The wind is blowing strongly.", sentenceCn: "风刮得很大。" },
+            { english: "Storm", type: "n.", chinese: "暴风雨", sentence: "We stay at home during a storm.", sentenceCn: "暴风雨时我们待在家里。" },
+            { english: "Rainbow", type: "n.", chinese: "彩虹", sentence: "We see a rainbow after rain.", sentenceCn: "雨后我们看到彩虹。" }
+        ];
+
+        // 应用状态
+        let currentIndex = 0;
+        let knownWords = new Set();
+        let unknownWords = new Set();
+        let currentMode = 'all';
+        let shuffledList = [...wordList];
+
+        // DOM 元素
+        const elements = {
+            wordCard: document.getElementById('word-card'),
+            wordEnglish: document.getElementById('word-english'),
+            wordType: document.getElementById('word-type'),
+            backEnglish: document.getElementById('back-english'),
+            backType: document.getElementById('back-type'),
+            wordChinese: document.getElementById('word-chinese'),
+            wordSentence: document.getElementById('word-sentence'),
+            currentWord: document.getElementById('current-word'),
+            totalWords: document.getElementById('total-words'),
+            progressCircle: document.getElementById('progress-circle'),
+            progressText: document.getElementById('progress-text'),
+            knownCount: document.getElementById('known-count'),
+            unknownCount: document.getElementById('unknown-count'),
+            accuracyRate: document.getElementById('accuracy-rate'),
+            playAudio: document.getElementById('play-audio'),
+            knowWord: document.getElementById('know-word'),
+            unknownWord: document.getElementById('unknown-word'),
+            prevWord: document.getElementById('prev-word'),
+            nextWord: document.getElementById('next-word'),
+            shuffleWords: document.getElementById('shuffle-words'),
+            resetProgress: document.getElementById('reset-progress'),
+            showReview: document.getElementById('show-review'),
+            reviewModal: document.getElementById('review-modal'),
+            reviewList: document.getElementById('review-list'),
+            closeModal: document.getElementById('close-modal'),
+            completionModal: document.getElementById('completion-modal'),
+            finalTotal: document.getElementById('final-total'),
+            finalKnown: document.getElementById('final-known'),
+            finalAccuracy: document.getElementById('final-accuracy'),
+            restartLearning: document.getElementById('restart-learning'),
+            reviewUnknown: document.getElementById('review-unknown'),
+            modeAll: document.getElementById('mode-all'),
+            modeAudio: document.getElementById('mode-audio'),
+            modeReview: document.getElementById('mode-review')
+        };
+
+        // 初始化
+        function init() {
+            updateWordDisplay();
+            updateProgress();
+            updateStats();
+            bindEvents();
+        }
+
+        // 更新单词显示
+        function updateWordDisplay() {
+            const word = shuffledList[currentIndex];
+            if (!word) return;
+
+            elements.wordEnglish.textContent = word.english;
+            elements.wordType.textContent = word.type;
+            elements.backEnglish.textContent = word.english;
+            elements.backType.textContent = word.type;
+            elements.wordChinese.textContent = word.chinese;
+            elements.wordSentence.innerHTML = `
+                ${word.sentence} <br>
+                <span class="text-gray-500 text-sm mt-2 block">${word.sentenceCn}</span>
+            `;
+            
+            elements.currentWord.textContent = `单词 ${currentIndex + 1}`;
+            elements.totalWords.textContent = shuffledList.length;
+
+            // 重置卡片状态
+            elements.wordCard.classList.remove('card-flipped');
+            
+            // 如果是听力模式，自动播放音频
+            if (currentMode === 'audio') {
+                setTimeout(() => {
+                    playWordAudio(word.english);
+                }, 500);
+            }
+        }
+
+        // 更新进度
+        function updateProgress() {
+            const progress = ((currentIndex + 1) / shuffledList.length) * 100;
+            const circumference = 2 * Math.PI * 14;
+            const offset = circumference - (progress / 100 * circumference);
+            
+            elements.progressCircle.style.strokeDashoffset = offset;
+            elements.progressText.textContent = `${Math.round(progress)}%`;
+
+            // 检查是否完成所有单词
+            if (currentIndex >= shuffledList.length - 1 && knownWords.size + unknownWords.size === shuffledList.length) {
+                setTimeout(showCompletionModal, 1000);
+            }
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            const totalAnswered = knownWords.size + unknownWords.size;
+            const accuracy = totalAnswered > 0 ? Math.round((knownWords.size / totalAnswered) * 100) : 0;
+
+            elements.knownCount.textContent = knownWords.size;
+            elements.unknownCount.textContent = unknownWords.size;
+            elements.accuracyRate.textContent = `${accuracy}%`;
+        }
+
+        // 播放单词音频（模拟）
+        function playWordAudio(word) {
+            // 这里可以集成真实的TTS API
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8;
+            speechSynthesis.speak(utterance);
+
+            // 添加播放动画
+            elements.playAudio.classList.add('pulse-ring');
+            setTimeout(() => {
+                elements.playAudio.classList.remove('pulse-ring');
+            }, 1000);
+        }
+
+        // 切换到下一个单词
+        function nextWord() {
+            if (currentIndex < shuffledList.length - 1) {
+                currentIndex++;
+                updateWordDisplay();
+                updateProgress();
+                elements.wordCard.classList.add('bounce-in');
+                setTimeout(() => {
+                    elements.wordCard.classList.remove('bounce-in');
+                }, 600);
+            }
+        }
+
+        // 切换到上一个单词
+        function prevWord() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateWordDisplay();
+                updateProgress();
+                elements.wordCard.classList.add('slide-up');
+                setTimeout(() => {
+                    elements.wordCard.classList.remove('slide-up');
+                }, 400);
+            }
+        }
+
+        // 标记单词为已掌握
+        function markAsKnown() {
+            const word = shuffledList[currentIndex];
+            knownWords.add(word.english);
+            unknownWords.delete(word.english);
+            updateStats();
+            nextWord();
+        }
+
+        // 标记单词为未掌握
+        function markAsUnknown() {
+            const word = shuffledList[currentIndex];
+            unknownWords.add(word.english);
+            knownWords.delete(word.english);
+            updateStats();
+            nextWord();
+        }
+
+        // 打乱单词顺序
+        function shuffleWordList() {
+            shuffledList = [...wordList].sort(() => Math.random() - 0.5);
+            currentIndex = 0;
+            updateWordDisplay();
+            updateProgress();
+            elements.wordCard.classList.add('bounce-in');
+            setTimeout(() => {
+                elements.wordCard.classList.remove('bounce-in');
+            }, 600);
+        }
+
+        // 重置进度
+        function resetWordProgress() {
+            knownWords.clear();
+            unknownWords.clear();
+            currentIndex = 0;
+            updateWordDisplay();
+            updateProgress();
+            updateStats();
+        }
+
+        // 显示复习列表
+        function showReviewList() {
+            elements.reviewList.innerHTML = '';
+            
+            const reviewWords = Array.from(unknownWords).map(word => {
+                return wordList.find(w => w.english === word);
+            }).filter(Boolean);
+
+            if (reviewWords.length === 0) {
+                elements.reviewList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fa fa-check-circle text-4xl text-green-500 mb-4"></i>
+                        <p>没有需要复习的单词！</p>
+                    </div>
+                `;
+            } else {
+                reviewWords.forEach(word => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors';
+                    item.innerHTML = `
+                        <div>
+                            <h4 class="font-semibold text-gray-800">${word.english}</h4>
+                            <p class="text-gray-600 text-sm">${word.chinese}</p>
+                            <p class="text-gray-500 text-xs mt-1">${word.sentence}</p>
+                        </div>
+                        <button onclick="playWordAudio('${word.english}')" class="w-8 h-8 bg-primary/10 hover:bg-primary/20 text-primary rounded-full flex items-center justify-center transition-colors">
+                            <i class="fa fa-volume-up text-sm"></i>
+                        </button>
+                    `;
+                    elements.reviewList.appendChild(item);
+                });
+            }
+
+            elements.reviewModal.classList.remove('hidden');
+            elements.reviewModal.classList.add('flex');
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            elements.reviewModal.classList.add('hidden');
+            elements.reviewModal.classList.remove('flex');
+        }
+
+        // 显示完成模态框
+        function showCompletionModal() {
+            const total = shuffledList.length;
+            const known = knownWords.size;
+            const accuracy = Math.round((known / total) * 100);
+
+            elements.finalTotal.textContent = total;
+            elements.finalKnown.textContent = known;
+            elements.finalAccuracy.textContent = `${accuracy}%`;
+
+            elements.completionModal.classList.remove('hidden');
+            elements.completionModal.classList.add('flex');
+        }
+
+        // 关闭完成模态框
+        function closeCompletionModal() {
+            elements.completionModal.classList.add('hidden');
+            elements.completionModal.classList.remove('flex');
+        }
+
+        // 重新开始学习
+        function restartLearning() {
+            closeCompletionModal();
+            resetWordProgress();
+        }
+
+        // 复习未掌握单词
+        function reviewUnknownWords() {
+            closeCompletionModal();
+            
+            const unknownWordList = Array.from(unknownWords).map(word => {
+                return wordList.find(w => w.english === word);
+            }).filter(Boolean);
+
+            shuffledList = unknownWordList;
+            currentIndex = 0;
+            updateWordDisplay();
+            updateProgress();
+        }
+
+        // 切换学习模式
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // 更新按钮状态
+            elements.modeAll.className = mode === 'all' ? 
+                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 bg-primary text-white' :
+                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 text-gray-600 hover:bg-gray-100';
+            
+            elements.modeAudio.className = mode === 'audio' ? 
+                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 bg-primary text-white' :
+                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 text-gray-600 hover:bg-gray-100';
+            
+            elements.modeReview.className = mode === 'review' ? 
+                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 bg-primary text-white' :
+                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 text-gray-600 hover:bg-gray-100';
+
+            // 根据模式调整显示
+            if (mode === 'review') {
+                const reviewList = Array.from(unknownWords).map(word => {
+                    return wordList.find(w => w.english === word);
+                }).filter(Boolean);
+                
+                if (reviewList.length > 0) {
+                    shuffledList = reviewList;
+                    currentIndex = 0;
+                    updateWordDisplay();
+                    updateProgress();
+                } else {
+                    showReviewList();
+                }
+            } else if (mode === 'all') {
+                shuffledList = [...wordList];
+                currentIndex = 0;
+                updateWordDisplay();
+                updateProgress();
+            }
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 卡片点击翻页
+            elements.wordCard.addEventListener('click', () => {
+                elements.wordCard.classList.toggle('card-flipped');
+            });
+
+            // 播放音频
+            elements.playAudio.addEventListener('click', () => {
+                const word = shuffledList[currentIndex];
+                if (word) {
+                    playWordAudio(word.english);
+                }
+            });
+
+            // 标记已掌握/未掌握
+            elements.knowWord.addEventListener('click', markAsKnown);
+            elements.unknownWord.addEventListener('click', markAsUnknown);
+
+            // 上一个/下一个单词
+            elements.prevWord.addEventListener('click', prevWord);
+            elements.nextWord.addEventListener('click', nextWord);
+
+            // 功能按钮
+            elements.shuffleWords.addEventListener('click', shuffleWordList);
+            elements.resetProgress.addEventListener('click', resetWordProgress);
+            elements.showReview.addEventListener('click', showReviewList);
+
+            // 模态框操作
+            elements.closeModal.addEventListener('click', closeModal);
+            elements.restartLearning.addEventListener('click', restartLearning);
+            elements.reviewUnknown.addEventListener('click', reviewUnknownWords);
+
+            // 模式切换
+            elements.modeAll.addEventListener('click', () => switchMode('all'));
+            elements.modeAudio.addEventListener('click', () => switchMode('audio'));
+            elements.modeReview.addEventListener('click', () => switchMode('review'));
+
+            // 键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        elements.wordCard.classList.toggle('card-flipped');
+                        break;
+                    case 'ArrowRight':
+                        nextWord();
+                        break;
+                    case 'ArrowLeft':
+                        prevWord();
+                        break;
+                    case 'y':
+                    case 'Y':
+                        if (elements.wordCard.classList.contains('card-flipped')) {
+                            markAsKnown();
+                        }
+                        break;
+                    case 'n':
+                    case 'N':
+                        if (elements.wordCard.classList.contains('card-flipped')) {
+                            markAsUnknown();
+                        }
+                        break;
+                    case 'r':
+                    case 'R':
+                        if (e.ctrlKey) {
+                            e.preventDefault();
+                            resetWordProgress();
+                        }
+                        break;
+                }
+            });
+
+            // 点击模态框背景关闭
+            elements.reviewModal.addEventListener('click', (e) => {
+                if (e.target === elements.reviewModal) {
+                    closeModal();
+                }
+            });
+
+            elements.completionModal.addEventListener('click', (e) => {
+                if (e.target === elements.completionModal) {
+                    closeCompletionModal();
+                }
+            });
+        }
+
+        // 启动应用
+        document.addEventListener('DOMContentLoaded', init);
+
+        // 暴露给全局的函数
+        window.playWordAudio = playWordAudio;
+    </script>
+</body>
+</html>
